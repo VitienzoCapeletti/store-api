@@ -6,7 +6,6 @@ import com.store_api.dtos.TransactionDTO;
 import com.store_api.repositories.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -25,9 +24,12 @@ public class TransactionService {
     private TransactionRepository repository;
 
     @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
     private RestTemplate restTemplate;
 
-    public void createTransaction(TransactionDTO transactionDTO) throws Exception {
+    public Transaction createTransaction(TransactionDTO transactionDTO) throws Exception {
         User sender = this.userService.findById(transactionDTO.senderId());
         User receiver = this.userService.findById(transactionDTO.receiverId());
 
@@ -48,15 +50,19 @@ public class TransactionService {
         receiver.setBalance(receiver.getBalance().add(transactionDTO.value()));
 
         this.repository.save(transaction);
-        userService.saveUser(sender);
-        userService.saveUser(receiver);
+        this.userService.saveUser(sender);
+        this.userService.saveUser(receiver);
 
+        this.notificationService.sendNotification(sender, "Transação realizada com sucesso");
+        this.notificationService.sendNotification(receiver, "Transação recebida com sucesso");
+
+        return transaction;
     }
 
-    public boolean authorizeTransaction(User sender, BigDecimal value){
-        ResponseEntity<Map> authorizationResponse = restTemplate.getForEntity("http", Map.class);
+    public boolean authorizeTransaction(User sender, BigDecimal value) {
+        ResponseEntity<Map> authorizationResponse = this.restTemplate.getForEntity("https://util.devi.tools/api/v2/authorize", Map.class);
 
-        if (authorizationResponse.getStatusCode() == HttpStatus.OK){
+        if (authorizationResponse.getStatusCode() == HttpStatus.OK) {
             String message = (String) authorizationResponse.getBody().get("message");
             return "Autorizado".equalsIgnoreCase(message);
         } else return false;

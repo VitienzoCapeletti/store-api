@@ -7,14 +7,14 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
-@Table(name = "transactions")
 @Entity(name = "transactions")
+@Table(name = "transactions")
+@Data
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private BigDecimal amount;
     @ManyToOne
     @JoinColumn(name = "sender_id")
